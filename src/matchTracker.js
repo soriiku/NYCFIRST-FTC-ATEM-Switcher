@@ -14,7 +14,8 @@ class MatchTracker extends EventEmitter {
 
         // State
         this.schedule = [];        // Full schedule with field assignments
-        this.hybridSchedule = [];  // Hybrid schedule with results
+        this.hybridSchedule = [];  // Schedule + results
+        this.alliances = [];       // Alliance selection results
         this.completedMatches = new Set(); // Match numbers we've already seen as completed
         this.startedMatches = new Set();   // Match numbers we've already seen as started
         this.currentField = null;
@@ -183,10 +184,34 @@ class MatchTracker extends EventEmitter {
             if (freshSchedule && freshSchedule.length > this.schedule.length) {
                 const newCount = freshSchedule.length - this.schedule.length;
                 this._log('info', `📋 ${newCount} new match(es) added to schedule (now ${freshSchedule.length} total)`);
+
+                // Add new matches directly into hybrid schedule so frontend sees them immediately
+                for (let i = this.schedule.length; i < freshSchedule.length; i++) {
+                    const matchNum = freshSchedule[i].matchNumber;
+                    if (!this.hybridSchedule.find(m => m.matchNumber === matchNum)) {
+                        this.hybridSchedule.push(freshSchedule[i]);
+                    }
+                }
+
                 this.schedule = freshSchedule;
 
                 // Re-determine next match with the updated schedule
                 this._determineNextMatch();
+                this.emit('reconfigured');
+            }
+
+            // Check for alliances (useful after quals or before playoffs)
+            if (this.alliances.length === 0 || Math.random() < 0.2) {
+                try {
+                    const alliances = await this.ftcApi.getAlliances(this.season, this.eventCode);
+                    if (alliances && alliances.length > 0 && this.alliances.length !== alliances.length) {
+                        this.alliances = alliances;
+                        this._log('info', `🤝 Loaded ${alliances.length} alliances from Alliance Selection`);
+                        this.emit('reconfigured');
+                    }
+                } catch (e) {
+                    // Ignore: might be quals where alliances don't exist yet
+                }
             }
         } catch (err) {
             // Silent fail — schedule refresh is non-critical
@@ -491,6 +516,8 @@ class MatchTracker extends EventEmitter {
             totalMatches: this.schedule.length,
             completedCount: this.completedMatches.size,
             schedule: scheduleWithStatus,
+            hybridSchedule: this.hybridSchedule,
+            alliances: this.alliances,
             log: this.log.slice(-50), // Last 50 entries
             config: {
                 season: this.season,

@@ -369,10 +369,57 @@
       color: #94a3b8;
     }
 
-    .schedule-table tr.completed {
-      opacity: 0.5;
+    .schedule-table .match-row.completed {
+      opacity: 0.6;
     }
 
+    /* Alliance Selection */
+    #allianceContainer {
+      display: none;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .alliance-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(99, 102, 241, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .alliance-card h3 {
+      font-size: 14px;
+      color: #818cf8;
+      margin-bottom: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .alliance-team {
+      font-size: 18px;
+      font-weight: 800;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+
+    .alliance-role {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .alliance-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.05);
+      margin: 8px 0;
+    }
+
+    /* Settings section */
     .schedule-table tr.next-up {
       opacity: 1;
       background: rgba(99, 102, 241, 0.08);
@@ -730,7 +777,7 @@
       color: #e2e8f0;
     }
 
-    .schedule-filter {
+    .schedule-controls {
       display: flex;
       gap: 8px;
       margin-bottom: 12px;
@@ -994,7 +1041,7 @@
     <!-- Match Schedule -->
     <div class="card schedule-card">
       <h2>Match Schedule</h2>
-      <div class="schedule-filter">
+      <div class="schedule-controls">
         <button class="filter-btn active" onclick="filterSchedule('all')">All</button>
         <button class="filter-btn" onclick="filterSchedule('upcoming')">Upcoming</button>
         <button class="filter-btn" onclick="filterSchedule('completed')">Completed</button>
@@ -1005,6 +1052,12 @@
           Loading schedule...
         </div>
       </div>
+    </div>
+
+    <!-- Alliance Selection (Hidden by default) -->
+    <div class="card" id="alliancesCard" style="display: none;">
+      <h2>🤝 Alliance Selection</h2>
+      <div id="allianceContainer"></div>
     </div>
 
     <!-- Event Log -->
@@ -1170,9 +1223,10 @@
       (tracker.log || []).forEach(entry => addLogEntry(entry, false));
       logEl.scrollTop = logEl.scrollHeight;
 
-      // Schedule
+      // Render schedule and alliances
       const nextMatchNum = tracker.nextMatch ? tracker.nextMatch.matchNumber : null;
-      renderSchedule(tracker.schedule || [], nextMatchNum);
+      renderSchedule(tracker.hybridSchedule || [], nextMatchNum);
+      renderAlliances(tracker.alliances);
     }
 
     function updateField(fieldNum, matchDesc) {
@@ -1487,6 +1541,43 @@
       container.innerHTML = html;
     }
 
+    function renderAlliances(alliances) {
+      const card = document.getElementById('alliancesCard');
+      const container = document.getElementById('allianceContainer');
+
+      if (!alliances || alliances.length === 0) {
+        card.style.display = 'none';
+        return;
+      }
+
+      card.style.display = 'block';
+      container.style.display = 'grid';
+
+      let html = '';
+      for (const t of alliances) {
+        html += `
+          <div class="alliance-card">
+            <h3>Alliance ${t.alliance}</h3>
+            
+            <div class="alliance-role">Captain</div>
+            <div class="alliance-team">${t.captain}</div>
+            <div class="alliance-divider"></div>
+            
+            <div class="alliance-role">Pick 1</div>
+            <div class="alliance-team">${t.pick1}</div>
+            
+            ${t.pick2 ? `
+              <div class="alliance-divider"></div>
+              <div class="alliance-role">Pick 2</div>
+              <div class="alliance-team">${t.pick2}</div>
+            ` : ''}
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    // Config updating
     init();
   </script>
 </body>

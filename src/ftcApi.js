@@ -110,6 +110,16 @@ class FtcApi {
   }
 
   /**
+   * Get alliance selection results
+   * GET /v2.0/{season}/alliances/{eventCode}
+   */
+  async getAlliances(season, eventCode) {
+    const path = `/v2.0/${season}/alliances/${eventCode}`;
+    const result = await this._request(path);
+    return result ? result.alliances || [] : [];
+  }
+
+  /**
    * Test API connectivity
    */
   async testConnection(season) {
