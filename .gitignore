@@ -1,0 +1,4 @@
+node_modules/
+.env
+dist/
+portable/node_modules/

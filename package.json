@@ -1,0 +1,36 @@
+{
+  "name": "ftc-atem-switcher",
+  "version": "1.0.0",
+  "description": "Automatically switch Blackmagic ATEM cameras between FTC competition fields based on match progress",
+  "main": "src/index.js",
+  "bin": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dry-run": "node src/index.js --dry-run",
+    "test-api": "node src/test-api.js",
+    "build": "pkg . --targets node18-win-x64 --output dist/ftc-atem-switcher.exe"
+  },
+  "pkg": {
+    "assets": [
+      "src/public/**/*"
+    ],
+    "outputPath": "dist"
+  },
+  "keywords": [
+    "ftc",
+    "atem",
+    "first",
+    "robotics",
+    "livestream",
+    "blackmagic"
+  ],
+  "license": "CC-BY-NC-SA-4.0",
+  "dependencies": {
+    "atem-connection": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}

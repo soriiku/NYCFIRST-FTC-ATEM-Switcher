@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FTC ATEM Switcher</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0e1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a1f35 0%, #0d1220 100%);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connected {
+      background: #22c55e;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: linear-gradient(135deg, #151929 0%, #111627 100%);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6366f1;
+      margin-bottom: 16px;
+    }
+
+    /* Active Field Display */
+    .field-display {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 32px;
+    }
+
+    .field-display .current-field {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      margin: 8px 0;
+    }
+
+    .field-display .current-field.field-1 {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .field-display .current-field.field-2 {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .field-display .label {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .field-display .match-info {
+      margin-top: 12px;
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .field-display .match-info strong {
+      color: #e2e8f0;
+    }
+
+    /* Progress bar */
+    .progress-section {
+      grid-column: 1 / -1;
+    }
+
+    .progress-bar-container {
+      background: #1e2438;
+      border-radius: 8px;
+      height: 12px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      border-radius: 8px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    /* Manual Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-field1 {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: white;
+    }
+
+    .btn-field2 {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      color: white;
+    }
+
+    /* ATEM Status */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: #64748b;
+    }
+
+    .stat-value {
+      font-weight: 500;
+    }
+
+    .stat-value.good {
+      color: #22c55e;
+    }
+
+    .stat-value.bad {
+      color: #ef4444;
+    }
+
+    /* Event Log */
+    .log-card {
+      grid-column: 1 / -1;
+    }
+
+    .log-entries {
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .log-entries::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log-entries::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .log-entries::-webkit-scrollbar-thumb {
+      background: #2d3548;
+      border-radius: 3px;
+    }
+
+    .log-entry {
+      padding: 2px 0;
+      display: flex;
+      gap: 8px;
+    }
+
+    .log-time {
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .log-msg {
+      color: #94a3b8;
+    }
+
+    .log-entry.info .log-msg {
+      color: #94a3b8;
+    }
+
+    .log-entry.match .log-msg {
+      color: #22c55e;
+    }
+
+    .log-entry.switch .log-msg {
+      color: #f59e0b;
+      font-weight: 600;
+    }
+
+    .log-entry.error .log-msg {
+      color: #ef4444;
+    }
+
+    /* Teams preview */
+    .teams-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .alliance {
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .alliance.red {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .alliance.blue {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .alliance-title {
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .alliance.red .alliance-title {
+      color: #ef4444;
+    }
+
+    .alliance.blue .alliance-title {
+      color: #3b82f6;
+    }
+
+    .team-num {
+      color: #cbd5e1;
+    }
+
+    /* Match Schedule Table */
+    .schedule-card {
+      grid-column: 1 / -1;
+    }
+
+    .schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .schedule-table thead th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .schedule-table tbody tr {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s ease;
+    }
+
+    .schedule-table tbody tr:hover {
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .schedule-table td {
+      padding: 10px 12px;
+      color: #94a3b8;
+    }
+
+    .schedule-table tr.completed {
+      opacity: 0.5;
+    }
+
+    .schedule-table tr.next-up {
+      opacity: 1;
+      background: rgba(99, 102, 241, 0.08);
+      border-left: 3px solid #6366f1;
+    }
+
+    .schedule-table tr.next-up td {
+      color: #e2e8f0;
+    }
+
+    .match-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .match-status.done {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+
+    .match-status.upcoming {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+    }
+
+    .match-status.next {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      animation: pulse 2s infinite;
+    }
+
+    .score-red {
+      color: #ef4444;
+      font-weight: 600;
+    }
+
+    .score-blue {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+
+    .score-winner {
+      font-weight: 700;
+    }
+
+    .score-dim {
+      opacity: 0.5;
+    }
+
+    .team-list {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .team-red {
+      color: #f87171;
+    }
+
+    .team-blue {
+      color: #60a5fa;
+    }
+
+    /* Settings Card */
+    .settings-card {
+      grid-column: 1 / -1;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .setting-group {
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.1);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s ease;
+    }
+
+    .setting-group:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .setting-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .setting-icon.field-1-icon {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2));
+    }
+
+    .setting-icon.field-2-icon {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2));
+    }
+
+    .setting-info {
+      flex: 1;
+    }
+
+    .setting-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+
+    .setting-desc {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .setting-select {
+      padding: 8px 12px;
+      background: #1e2438;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 90px;
+      text-align: center;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236366f1' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    .setting-select:hover {
+      border-color: #6366f1;
+    }
+
+    .setting-select:focus {
+      outline: none;
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .settings-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: white;
+      padding: 10px 28px;
+    }
+
+    .btn-save:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .save-feedback {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .save-feedback.show {
+      opacity: 1;
+    }
+
+    .save-feedback.success {
+      color: #22c55e;
+    }
+
+    .save-feedback.error {
+      color: #ef4444;
+    }
+
+    .setting-input {
+      padding: 8px 12px;
+      background: #1e2438;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .setting-input:hover {
+      border-color: #6366f1;
+    }
+
+    .setting-input:focus {
+      outline: none;
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .setting-input::placeholder {
+      color: #475569;
+    }
+
+    .setting-input.password {
+      letter-spacing: 1px;
+    }
+
+    .settings-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .settings-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .setting-group-vertical {
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.1);
+      border-radius: 10px;
+      padding: 14px;
+      transition: border-color 0.2s ease;
+    }
+
+    .setting-group-vertical:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .setting-group-vertical .setting-label {
+      margin-bottom: 8px;
+    }
+
+    .event-config-icon {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2));
+    }
+
+    .current-event-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #818cf8;
+      margin-bottom: 16px;
+    }
+
+    .current-event-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    .atem-ip-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .atem-ip-input {
+      flex: 1;
+      padding: 6px 10px;
+      background: #1e2438;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .atem-ip-input:hover {
+      border-color: #6366f1;
+    }
+
+    .atem-ip-input:focus {
+      outline: none;
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .btn-connect {
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .btn-connect:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .connect-feedback {
+      font-size: 11px;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    .connect-feedback.success {
+      color: #22c55e;
+    }
+
+    .connect-feedback.error {
+      color: #ef4444;
+    }
+
+    .mode-description {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.5;
+      padding: 10px 14px;
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.1);
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+
+    .mode-description strong {
+      color: #e2e8f0;
+    }
+
+    .schedule-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      background: transparent;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #e2e8f0;
+    }
+
+    .filter-btn.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: #6366f1;
+      color: #818cf8;
+    }
+
+    .no-schedule {
+      text-align: center;
+      padding: 40px 20px;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .no-schedule .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+
+      .field-display .current-field {
+        font-size: 48px;
+      }
+
+      .schedule-table {
+        font-size: 12px;
+      }
+
+      .schedule-table td,
+      .schedule-table th {
+        padding: 8px 6px;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .settings-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>⚡ FTC ATEM Switcher</h1>
+    <div class="status-badge">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Active Field -->
+    <div class="card field-display">
+      <h2>Active Camera</h2>
+      <div class="label">Currently showing</div>
+      <div class="current-field field-1" id="currentField">—</div>
+      <div class="match-info" id="matchInfo">Loading...</div>
+      <div class="controls">
+        <button class="btn btn-field1" onclick="switchField(1)">⬅ Field 1</button>
+        <button class="btn btn-field2" onclick="switchField(2)">Field 2 ➡</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card progress-section">
+      <h2>Match Progress</h2>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressText">0 / 0 matches</span>
+        <span id="progressPercent">0%</span>
+      </div>
+    </div>
+
+    <!-- ATEM Status -->
+    <div class="card">
+      <h2>ATEM Status</h2>
+      <div class="stat-row">
+        <span class="stat-label">Connection</span>
+        <span class="stat-value" id="atemConnection">—</span>
+      </div>
+      <div class="atem-ip-row">
+        <span class="stat-label">IP Address</span>
+        <input type="text" class="atem-ip-input" id="atemIpInput" placeholder="e.g. 192.168.1.240">
+        <button class="btn btn-connect" id="connectAtemBtn" onclick="connectAtem()">Connect</button>
+        <span class="connect-feedback" id="atemConnectFeedback"></span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Active Input</span>
+        <span class="stat-value" id="atemInput">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mode</span>
+        <span class="stat-value" id="atemMode">—</span>
+      </div>
+    </div>
+
+    <!-- HDMI Input Settings -->
+    <div class="card settings-card">
+      <h2>⚙ HDMI Input Mapping</h2>
+      <div class="settings-grid">
+        <div class="setting-group">
+          <div class="setting-icon field-1-icon">📹</div>
+          <div class="setting-info">
+            <div class="setting-label">Field 1 Camera</div>
+            <div class="setting-desc">HDMI input for Field 1</div>
+          </div>
+          <select class="setting-select" id="field1InputSelect">
+            <option value="1">HDMI 1</option>
+            <option value="2">HDMI 2</option>
+            <option value="3">HDMI 3</option>
+            <option value="4">HDMI 4</option>
+            <option value="5">HDMI 5</option>
+            <option value="6">HDMI 6</option>
+            <option value="7">HDMI 7</option>
+            <option value="8">HDMI 8</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <div class="setting-icon field-2-icon">📹</div>
+          <div class="setting-info">
+            <div class="setting-label">Field 2 Camera</div>
+            <div class="setting-desc">HDMI input for Field 2</div>
+          </div>
+          <select class="setting-select" id="field2InputSelect">
+            <option value="1">HDMI 1</option>
+            <option value="2">HDMI 2</option>
+            <option value="3">HDMI 3</option>
+            <option value="4">HDMI 4</option>
+            <option value="5">HDMI 5</option>
+            <option value="6">HDMI 6</option>
+            <option value="7">HDMI 7</option>
+            <option value="8">HDMI 8</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button class="btn btn-save" id="saveInputsBtn" onclick="saveInputMapping()">Save Mapping</button>
+        <span class="save-feedback" id="saveFeedback"></span>
+      </div>
+    </div>
+
+    <!-- Switch Mode -->
+    <div class="card settings-card">
+      <h2>🎯 Switch Mode</h2>
+      <div class="settings-grid">
+        <div class="setting-group" style="grid-column: 1 / -1">
+          <div class="setting-icon"
+            style="background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.2));">🎬</div>
+          <div class="setting-info">
+            <div class="setting-label">Camera Switch Trigger</div>
+            <div class="setting-desc">When should the camera switch to the next field?</div>
+          </div>
+          <select class="setting-select" id="switchModeSelect" onchange="changeSwitchMode()" style="min-width: 200px;">
+            <option value="score">Score-Based</option>
+            <option value="timer">Timer-Based (2:45)</option>
+          </select>
+        </div>
+      </div>
+      <div class="mode-description" id="modeDescription">
+        <strong>Score-Based:</strong> The camera switches to the next field after a match’s score is committed by the
+        scorekeeper. This is the most reliable method — the switch happens exactly when the match result is finalized.
+      </div>
+    </div>
+
+    <!-- Event Configuration -->
+    <div class="card settings-card">
+      <h2>🏆 Event Configuration</h2>
+      <div class="current-event-badge">
+        <span class="dot"></span>
+        <span id="currentEventBadge">Loading...</span>
+      </div>
+      <div class="settings-grid-2" style="margin-bottom: 12px;">
+        <div class="setting-group-vertical">
+          <div class="setting-label">FTC API Username</div>
+          <input type="text" class="setting-input" id="apiUsername" placeholder="Your FTC API username">
+        </div>
+        <div class="setting-group-vertical">
+          <div class="setting-label">FTC API Auth Key</div>
+          <input type="password" class="setting-input password" id="apiAuthKey" placeholder="Your FTC API auth key">
+        </div>
+      </div>
+      <div class="settings-grid-3">
+        <div class="setting-group-vertical">
+          <div class="setting-label">Event Code</div>
+          <input type="text" class="setting-input" id="eventCode" placeholder="e.g. USNYNYBRSQ2"
+            style="text-transform: uppercase;">
+        </div>
+        <div class="setting-group-vertical">
+          <div class="setting-label">Season</div>
+          <input type="number" class="setting-input" id="eventSeason" placeholder="e.g. 2025" min="2015" max="2030">
+        </div>
+        <div class="setting-group-vertical">
+          <div class="setting-label">Tournament Level</div>
+          <select class="setting-select" id="tournamentLevel" style="width: 100%;">
+            <option value="qual">Qualification</option>
+            <option value="playoff">Playoff</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button class="btn btn-save" id="saveEventBtn" onclick="saveEventConfig()">Apply &amp; Reload</button>
+        <span class="save-feedback" id="eventFeedback"></span>
+      </div>
+    </div>
+
+    <!-- Next Match -->
+    <div class="card">
+      <h2>Next Match</h2>
+      <div id="nextMatchInfo">
+        <div class="stat-row">
+          <span class="stat-label">Match</span>
+          <span class="stat-value" id="nextMatchNum">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Field</span>
+          <span class="stat-value" id="nextMatchField">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Scheduled</span>
+          <span class="stat-value" id="nextMatchTime">—</span>
+        </div>
+      </div>
+      <div class="teams-preview" id="teamsPreview"></div>
+    </div>
+
+    <!-- Match Schedule -->
+    <div class="card schedule-card">
+      <h2>Match Schedule</h2>
+      <div class="schedule-filter">
+        <button class="filter-btn active" onclick="filterSchedule('all')">All</button>
+        <button class="filter-btn" onclick="filterSchedule('upcoming')">Upcoming</button>
+        <button class="filter-btn" onclick="filterSchedule('completed')">Completed</button>
+      </div>
+      <div id="scheduleContainer">
+        <div class="no-schedule">
+          <div class="icon">📋</div>
+          Loading schedule...
+        </div>
+      </div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="card log-card">
+      <h2>Event Log</h2>
+      <div class="log-entries" id="logEntries"></div>
+    </div>
+  </div>
+
+  <script>
+    let evtSource;
+
+    function init() {
+      // Fetch initial state
+      fetch('/api/state')
+        .then(r => r.json())
+        .then(data => updateUI(data))
+        .catch(err => console.error('Failed to load state:', err));
+
+      // Connect SSE
+      evtSource = new EventSource('/api/events');
+      evtSource.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        handleEvent(msg);
+      };
+
+      evtSource.onerror = () => {
+        document.getElementById('statusDot').className = 'status-dot';
+        document.getElementById('statusText').textContent = 'Disconnected';
+      };
+    }
+
+    function handleEvent(msg) {
+      switch (msg.type) {
+        case 'state':
+          updateUI(msg.data);
+          break;
+        case 'log':
+          addLogEntry(msg.data);
+          break;
+        case 'fieldSwitch':
+          updateField(msg.data.fieldNumber, msg.data.description);
+          fetchState();
+          break;
+        case 'matchCompleted':
+          fetchState();
+          break;
+        case 'atemSwitched':
+          fetchState();
+          break;
+        case 'configChanged':
+          fetchState();
+          break;
+        case 'reconfigured':
+          fetchState();
+          break;
+      }
+    }
+
+    function fetchState() {
+      fetch('/api/state')
+        .then(r => r.json())
+        .then(data => updateUI(data))
+        .catch(() => { });
+    }
+
+    function updateUI(data) {
+      const { tracker, atem } = data;
+
+      // Status
+      const dot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      if (atem.connected) {
+        dot.className = 'status-dot connected';
+        statusText.textContent = tracker.polling ? 'Live — Polling' : 'Connected';
+      } else {
+        dot.className = 'status-dot';
+        statusText.textContent = 'Disconnected';
+      }
+
+      // Current field
+      updateField(tracker.currentField, tracker.nextMatch ? tracker.nextMatch.description : null);
+
+      // Progress
+      const pct = tracker.totalMatches > 0
+        ? Math.round((tracker.completedCount / tracker.totalMatches) * 100) : 0;
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressText').textContent = `${tracker.completedCount} / ${tracker.totalMatches} matches`;
+      document.getElementById('progressPercent').textContent = pct + '%';
+
+      // ATEM
+      document.getElementById('atemConnection').textContent = atem.connected ? 'Connected' : 'Disconnected';
+      document.getElementById('atemConnection').className = 'stat-value ' + (atem.connected ? 'good' : 'bad');
+      // Only populate IP field if empty (don't overwrite user input)
+      if (!document.getElementById('atemIpInput').value) {
+        document.getElementById('atemIpInput').value = atem.ip || '';
+      }
+      document.getElementById('atemInput').textContent = atem.currentInput ? `HDMI ${atem.currentInput}` : '—';
+      document.getElementById('atemMode').textContent = atem.dryRun ? 'Dry Run' : 'Live';
+      document.getElementById('atemMode').className = 'stat-value ' + (atem.dryRun ? 'bad' : 'good');
+
+      // Sync HDMI input selects with current config
+      if (atem.fieldInputMap) {
+        document.getElementById('field1InputSelect').value = atem.fieldInputMap[1] || 1;
+        document.getElementById('field2InputSelect').value = atem.fieldInputMap[2] || 3;
+      }
+
+      // Sync event config
+      if (tracker.config) {
+        const cfg = tracker.config;
+        document.getElementById('currentEventBadge').textContent = `${cfg.eventCode} • ${cfg.season} • ${cfg.tournamentLevel}`;
+        // Sync switch mode
+        document.getElementById('switchModeSelect').value = cfg.switchMode || 'score';
+        updateModeDescription(cfg.switchMode || 'score');
+        // Only populate fields if they're empty (don't overwrite user input)
+        if (!document.getElementById('eventCode').value) {
+          document.getElementById('eventCode').value = cfg.eventCode || '';
+        }
+        if (!document.getElementById('eventSeason').value) {
+          document.getElementById('eventSeason').value = cfg.season || '';
+        }
+        if (!document.getElementById('tournamentLevel').value) {
+          document.getElementById('tournamentLevel').value = cfg.tournamentLevel || 'qual';
+        }
+      }
+
+      // Next match
+      if (tracker.nextMatch) {
+        document.getElementById('nextMatchNum').textContent = tracker.nextMatch.description || `Match ${tracker.nextMatch.matchNumber}`;
+        document.getElementById('nextMatchField').textContent = tracker.nextMatch.field || '—';
+        document.getElementById('nextMatchTime').textContent = tracker.nextMatch.startTime
+          ? new Date(tracker.nextMatch.startTime).toLocaleTimeString() : '—';
+
+        // Teams
+        const teams = tracker.nextMatch.teams || [];
+        const preview = document.getElementById('teamsPreview');
+        if (teams.length > 0) {
+          const redTeams = teams.filter(t => t.station && t.station.startsWith('Red'));
+          const blueTeams = teams.filter(t => t.station && t.station.startsWith('Blue'));
+          preview.innerHTML = `
+            <div class="alliance red">
+              <div class="alliance-title">Red Alliance</div>
+              ${redTeams.map(t => `<div class="team-num">${t.teamNumber || '?'}</div>`).join('')}
+            </div>
+            <div class="alliance blue">
+              <div class="alliance-title">Blue Alliance</div>
+              ${blueTeams.map(t => `<div class="team-num">${t.teamNumber || '?'}</div>`).join('')}
+            </div>
+          `;
+        } else {
+          preview.innerHTML = '';
+        }
+      } else {
+        document.getElementById('nextMatchNum').textContent = 'All complete!';
+        document.getElementById('nextMatchField').textContent = '—';
+        document.getElementById('nextMatchTime').textContent = '—';
+        document.getElementById('teamsPreview').innerHTML = '';
+      }
+
+      // Log
+      const logEl = document.getElementById('logEntries');
+      logEl.innerHTML = '';
+      (tracker.log || []).forEach(entry => addLogEntry(entry, false));
+      logEl.scrollTop = logEl.scrollHeight;
+
+      // Schedule
+      const nextMatchNum = tracker.nextMatch ? tracker.nextMatch.matchNumber : null;
+      renderSchedule(tracker.schedule || [], nextMatchNum);
+    }
+
+    function updateField(fieldNum, matchDesc) {
+      const el = document.getElementById('currentField');
+      const info = document.getElementById('matchInfo');
+
+      if (fieldNum) {
+        el.textContent = `Field ${fieldNum}`;
+        el.className = `current-field field-${fieldNum}`;
+      } else {
+        el.textContent = '—';
+        el.className = 'current-field';
+      }
+
+      if (matchDesc) {
+        info.innerHTML = `Next up: <strong>${matchDesc}</strong>`;
+      }
+    }
+
+    function addLogEntry(entry, autoScroll = true) {
+      const logEl = document.getElementById('logEntries');
+      const div = document.createElement('div');
+      div.className = `log-entry ${entry.type}`;
+
+      const time = new Date(entry.time).toLocaleTimeString();
+      div.innerHTML = `<span class="log-time">${time}</span><span class="log-msg">${entry.message}</span>`;
+      logEl.appendChild(div);
+
+      // Keep only last 100 entries in DOM
+      while (logEl.children.length > 100) {
+        logEl.removeChild(logEl.firstChild);
+      }
+
+      if (autoScroll) logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function switchField(fieldNum) {
+      fetch(`/api/switch/${fieldNum}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(() => fetchState())
+        .catch(err => console.error('Switch failed:', err));
+    }
+
+    function connectAtem() {
+      const ip = document.getElementById('atemIpInput').value.trim();
+      const btn = document.getElementById('connectAtemBtn');
+      const feedback = document.getElementById('atemConnectFeedback');
+
+      if (!ip) {
+        feedback.textContent = 'Enter an IP';
+        feedback.className = 'connect-feedback error';
+        setTimeout(() => { feedback.textContent = ''; feedback.className = 'connect-feedback'; }, 3000);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+      feedback.textContent = '';
+
+      fetch('/api/config/atem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            feedback.textContent = '✓ Connected';
+            feedback.className = 'connect-feedback success';
+          } else {
+            feedback.textContent = data.error || 'Failed';
+            feedback.className = 'connect-feedback error';
+          }
+          btn.disabled = false;
+          btn.textContent = 'Connect';
+          fetchState();
+          setTimeout(() => { feedback.textContent = ''; feedback.className = 'connect-feedback'; }, 5000);
+        })
+        .catch(err => {
+          feedback.textContent = err.message || 'Error';
+          feedback.className = 'connect-feedback error';
+          btn.disabled = false;
+          btn.textContent = 'Connect';
+          setTimeout(() => { feedback.textContent = ''; feedback.className = 'connect-feedback'; }, 5000);
+        });
+    }
+
+    function updateModeDescription(mode) {
+      const desc = document.getElementById('modeDescription');
+      if (mode === 'timer') {
+        desc.innerHTML = '<strong>Timer-Based (2:45):</strong> The camera switches exactly 2 minutes and 45 seconds after a match starts. This ensures the switch happens during the match, giving the audience a smooth transition before the next match begins on the other field. Best for events where scores are committed late.';
+      } else {
+        desc.innerHTML = '<strong>Score-Based:</strong> The camera switches to the next field after a match\u2019s score is committed by the scorekeeper. This is the most reliable method \u2014 the switch happens exactly when the match result is finalized.';
+      }
+    }
+
+    function changeSwitchMode() {
+      const mode = document.getElementById('switchModeSelect').value;
+      updateModeDescription(mode);
+
+      fetch('/api/config/switchmode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok) {
+            console.error('Failed to change switch mode:', data.error);
+          }
+          fetchState();
+        })
+        .catch(err => console.error('Switch mode error:', err));
+    }
+
+    function saveInputMapping() {
+      const field1Input = document.getElementById('field1InputSelect').value;
+      const field2Input = document.getElementById('field2InputSelect').value;
+      const btn = document.getElementById('saveInputsBtn');
+      const feedback = document.getElementById('saveFeedback');
+
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      fetch('/api/config/inputs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field1Input, field2Input }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            feedback.textContent = '✓ Saved!';
+            feedback.className = 'save-feedback show success';
+          } else {
+            feedback.textContent = '✗ ' + (data.error || 'Failed');
+            feedback.className = 'save-feedback show error';
+          }
+          btn.disabled = false;
+          btn.textContent = 'Save Mapping';
+          fetchState();
+          setTimeout(() => { feedback.className = 'save-feedback'; }, 3000);
+        })
+        .catch(err => {
+          feedback.textContent = '✗ Network error';
+          feedback.className = 'save-feedback show error';
+          btn.disabled = false;
+          btn.textContent = 'Save Mapping';
+          setTimeout(() => { feedback.className = 'save-feedback'; }, 3000);
+        });
+    }
+
+    function saveEventConfig() {
+      const username = document.getElementById('apiUsername').value.trim();
+      const authKey = document.getElementById('apiAuthKey').value.trim();
+      const eventCode = document.getElementById('eventCode').value.trim();
+      const season = document.getElementById('eventSeason').value;
+      const tournamentLevel = document.getElementById('tournamentLevel').value;
+      const btn = document.getElementById('saveEventBtn');
+      const feedback = document.getElementById('eventFeedback');
+
+      if (!eventCode) {
+        feedback.textContent = '✗ Event code is required';
+        feedback.className = 'save-feedback show error';
+        setTimeout(() => { feedback.className = 'save-feedback'; }, 3000);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Applying...';
+
+      const body = { eventCode, season, tournamentLevel };
+      if (username && authKey) {
+        body.username = username;
+        body.authKey = authKey;
+      }
+
+      fetch('/api/config/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            feedback.textContent = '✓ Event loaded!';
+            feedback.className = 'save-feedback show success';
+            // Clear credential fields after successful save
+            document.getElementById('apiUsername').value = '';
+            document.getElementById('apiAuthKey').value = '';
+            // Update the badge
+            document.getElementById('currentEventBadge').textContent =
+              `${data.config.eventCode} • ${data.config.season} • ${data.config.tournamentLevel}`;
+          } else {
+            feedback.textContent = '✗ ' + (data.error || 'Failed');
+            feedback.className = 'save-feedback show error';
+          }
+          btn.disabled = false;
+          btn.textContent = 'Apply & Reload';
+          fetchState();
+          setTimeout(() => { feedback.className = 'save-feedback'; }, 4000);
+        })
+        .catch(err => {
+          feedback.textContent = '✗ ' + (err.message || 'Network error');
+          feedback.className = 'save-feedback show error';
+          btn.disabled = false;
+          btn.textContent = 'Apply & Reload';
+          setTimeout(() => { feedback.className = 'save-feedback'; }, 4000);
+        });
+    }
+
+    // --- Match Schedule ---
+    let currentScheduleFilter = 'all';
+    let cachedSchedule = [];
+    let cachedNextMatchNum = null;
+
+    function filterSchedule(filter) {
+      currentScheduleFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toLowerCase() === filter);
+      });
+      renderSchedule(cachedSchedule, cachedNextMatchNum);
+    }
+
+    function renderSchedule(schedule, nextMatchNum) {
+      cachedSchedule = schedule;
+      cachedNextMatchNum = nextMatchNum;
+      const container = document.getElementById('scheduleContainer');
+
+      if (!schedule || schedule.length === 0) {
+        container.innerHTML = `
+          <div class="no-schedule">
+            <div class="icon">📋</div>
+            No matches scheduled yet.
+          </div>`;
+        return;
+      }
+
+      // Apply filter
+      let filtered = schedule;
+      if (currentScheduleFilter === 'upcoming') {
+        filtered = schedule.filter(m => !m.completed);
+      } else if (currentScheduleFilter === 'completed') {
+        filtered = schedule.filter(m => m.completed);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="no-schedule">
+            <div class="icon">${currentScheduleFilter === 'completed' ? '⏳' : '✅'}</div>
+            No ${currentScheduleFilter} matches.
+          </div>`;
+        return;
+      }
+
+      let html = `<table class="schedule-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Match</th>
+            <th>Field</th>
+            <th>Time</th>
+            <th>Red Alliance</th>
+            <th>Blue Alliance</th>
+            <th>Score</th>
+            <th>Status</th>
+          </tr>
+        </thead><tbody>`;
+
+      for (const m of filtered) {
+        const isNext = nextMatchNum && m.matchNumber === nextMatchNum;
+        const rowClass = m.completed ? 'completed' : (isNext ? 'next-up' : '');
+
+        const time = m.startTime
+          ? new Date(m.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : '—';
+
+        const redTeams = (m.teams || []).filter(t => t.station && t.station.startsWith('Red'));
+        const blueTeams = (m.teams || []).filter(t => t.station && t.station.startsWith('Blue'));
+
+        let scoreHtml = '—';
+        if (m.completed && m.scoreRedFinal != null && m.scoreBlueFinal != null) {
+          const redWin = m.scoreRedFinal > m.scoreBlueFinal;
+          const blueWin = m.scoreBlueFinal > m.scoreRedFinal;
+          scoreHtml = `<span class="score-red ${redWin ? 'score-winner' : ''}">${m.scoreRedFinal}</span>
+            <span class="score-dim">–</span>
+            <span class="score-blue ${blueWin ? 'score-winner' : ''}">${m.scoreBlueFinal}</span>`;
+        }
+
+        let statusHtml;
+        if (m.completed) {
+          statusHtml = '<span class="match-status done">Done</span>';
+        } else if (isNext) {
+          statusHtml = '<span class="match-status next">Next</span>';
+        } else {
+          statusHtml = '<span class="match-status upcoming">Upcoming</span>';
+        }
+
+        html += `<tr class="${rowClass}">
+          <td>${m.matchNumber}</td>
+          <td>${m.description}</td>
+          <td>${m.field || '—'}</td>
+          <td>${time}</td>
+          <td class="team-list">${redTeams.map(t => `<span class="team-red">${t.teamNumber || '?'}</span>`).join(', ') || '—'}</td>
+          <td class="team-list">${blueTeams.map(t => `<span class="team-blue">${t.teamNumber || '?'}</span>`).join(', ') || '—'}</td>
+          <td>${scoreHtml}</td>
+          <td>${statusHtml}</td>
+        </tr>`;
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    init();
+  </script>
+</body>
+
+</html>

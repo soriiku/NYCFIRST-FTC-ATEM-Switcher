@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FTC ATEM Switcher</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0e1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a1f35 0%, #0d1220 100%);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.connected { background: #22c55e; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: linear-gradient(135deg, #151929 0%, #111627 100%);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6366f1;
+      margin-bottom: 16px;
+    }
+
+    /* Active Field Display */
+    .field-display {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 32px;
+    }
+
+    .field-display .current-field {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      margin: 8px 0;
+    }
+
+    .field-display .current-field.field-1 {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .field-display .current-field.field-2 {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .field-display .label {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .field-display .match-info {
+      margin-top: 12px;
+      font-size: 16px;
+      color: #94a3b8;
+    }
+
+    .field-display .match-info strong {
+      color: #e2e8f0;
+    }
+
+    /* Progress bar */
+    .progress-section {
+      grid-column: 1 / -1;
+    }
+
+    .progress-bar-container {
+      background: #1e2438;
+      border-radius: 8px;
+      height: 12px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #6366f1, #818cf8);
+      border-radius: 8px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    /* Manual Controls */
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-field1 {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: white;
+    }
+
+    .btn-field2 {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      color: white;
+    }
+
+    /* ATEM Status */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 14px;
+    }
+
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: #64748b; }
+    .stat-value { font-weight: 500; }
+    .stat-value.good { color: #22c55e; }
+    .stat-value.bad { color: #ef4444; }
+
+    /* Event Log */
+    .log-card {
+      grid-column: 1 / -1;
+    }
+
+    .log-entries {
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .log-entries::-webkit-scrollbar { width: 6px; }
+    .log-entries::-webkit-scrollbar-track { background: transparent; }
+    .log-entries::-webkit-scrollbar-thumb { background: #2d3548; border-radius: 3px; }
+
+    .log-entry {
+      padding: 2px 0;
+      display: flex;
+      gap: 8px;
+    }
+
+    .log-time {
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .log-msg { color: #94a3b8; }
+    .log-entry.info .log-msg { color: #94a3b8; }
+    .log-entry.match .log-msg { color: #22c55e; }
+    .log-entry.switch .log-msg { color: #f59e0b; font-weight: 600; }
+    .log-entry.error .log-msg { color: #ef4444; }
+
+    /* Teams preview */
+    .teams-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .alliance {
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .alliance.red {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .alliance.blue {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .alliance-title {
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .alliance.red .alliance-title { color: #ef4444; }
+    .alliance.blue .alliance-title { color: #3b82f6; }
+
+    .team-num {
+      color: #cbd5e1;
+    }
+
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+      .field-display .current-field { font-size: 48px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚡ FTC ATEM Switcher</h1>
+    <div class="status-badge">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting...</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Active Field -->
+    <div class="card field-display">
+      <h2>Active Camera</h2>
+      <div class="label">Currently showing</div>
+      <div class="current-field field-1" id="currentField">—</div>
+      <div class="match-info" id="matchInfo">Loading...</div>
+      <div class="controls">
+        <button class="btn btn-field1" onclick="switchField(1)">⬅ Field 1</button>
+        <button class="btn btn-field2" onclick="switchField(2)">Field 2 ➡</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card progress-section">
+      <h2>Match Progress</h2>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressText">0 / 0 matches</span>
+        <span id="progressPercent">0%</span>
+      </div>
+    </div>
+
+    <!-- ATEM Status -->
+    <div class="card">
+      <h2>ATEM Status</h2>
+      <div class="stat-row">
+        <span class="stat-label">Connection</span>
+        <span class="stat-value" id="atemConnection">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">IP Address</span>
+        <span class="stat-value" id="atemIp">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Active Input</span>
+        <span class="stat-value" id="atemInput">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mode</span>
+        <span class="stat-value" id="atemMode">—</span>
+      </div>
+    </div>
+
+    <!-- Next Match -->
+    <div class="card">
+      <h2>Next Match</h2>
+      <div id="nextMatchInfo">
+        <div class="stat-row">
+          <span class="stat-label">Match</span>
+          <span class="stat-value" id="nextMatchNum">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Field</span>
+          <span class="stat-value" id="nextMatchField">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Scheduled</span>
+          <span class="stat-value" id="nextMatchTime">—</span>
+        </div>
+      </div>
+      <div class="teams-preview" id="teamsPreview"></div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="card log-card">
+      <h2>Event Log</h2>
+      <div class="log-entries" id="logEntries"></div>
+    </div>
+  </div>
+
+  <script>
+    let evtSource;
+
+    function init() {
+      // Fetch initial state
+      fetch('/api/state')
+        .then(r => r.json())
+        .then(data => updateUI(data))
+        .catch(err => console.error('Failed to load state:', err));
+
+      // Connect SSE
+      evtSource = new EventSource('/api/events');
+      evtSource.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        handleEvent(msg);
+      };
+
+      evtSource.onerror = () => {
+        document.getElementById('statusDot').className = 'status-dot';
+        document.getElementById('statusText').textContent = 'Disconnected';
+      };
+    }
+
+    function handleEvent(msg) {
+      switch (msg.type) {
+        case 'state':
+          updateUI(msg.data);
+          break;
+        case 'log':
+          addLogEntry(msg.data);
+          break;
+        case 'fieldSwitch':
+          updateField(msg.data.fieldNumber, msg.data.description);
+          fetchState();
+          break;
+        case 'matchCompleted':
+          fetchState();
+          break;
+        case 'atemSwitched':
+          fetchState();
+          break;
+      }
+    }
+
+    function fetchState() {
+      fetch('/api/state')
+        .then(r => r.json())
+        .then(data => updateUI(data))
+        .catch(() => {});
+    }
+
+    function updateUI(data) {
+      const { tracker, atem } = data;
+
+      // Status
+      const dot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      if (atem.connected) {
+        dot.className = 'status-dot connected';
+        statusText.textContent = tracker.polling ? 'Live — Polling' : 'Connected';
+      } else {
+        dot.className = 'status-dot';
+        statusText.textContent = 'Disconnected';
+      }
+
+      // Current field
+      updateField(tracker.currentField, tracker.nextMatch ? tracker.nextMatch.description : null);
+
+      // Progress
+      const pct = tracker.totalMatches > 0
+        ? Math.round((tracker.completedCount / tracker.totalMatches) * 100) : 0;
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressText').textContent = `${tracker.completedCount} / ${tracker.totalMatches} matches`;
+      document.getElementById('progressPercent').textContent = pct + '%';
+
+      // ATEM
+      document.getElementById('atemConnection').textContent = atem.connected ? 'Connected' : 'Disconnected';
+      document.getElementById('atemConnection').className = 'stat-value ' + (atem.connected ? 'good' : 'bad');
+      document.getElementById('atemIp').textContent = atem.ip;
+      document.getElementById('atemInput').textContent = atem.currentInput ? `HDMI ${atem.currentInput}` : '—';
+      document.getElementById('atemMode').textContent = atem.dryRun ? 'Dry Run' : 'Live';
+      document.getElementById('atemMode').className = 'stat-value ' + (atem.dryRun ? 'bad' : 'good');
+
+      // Next match
+      if (tracker.nextMatch) {
+        document.getElementById('nextMatchNum').textContent = tracker.nextMatch.description || `Match ${tracker.nextMatch.matchNumber}`;
+        document.getElementById('nextMatchField').textContent = tracker.nextMatch.field || '—';
+        document.getElementById('nextMatchTime').textContent = tracker.nextMatch.startTime
+          ? new Date(tracker.nextMatch.startTime).toLocaleTimeString() : '—';
+
+        // Teams
+        const teams = tracker.nextMatch.teams || [];
+        const preview = document.getElementById('teamsPreview');
+        if (teams.length > 0) {
+          const redTeams = teams.filter(t => t.station && t.station.startsWith('Red'));
+          const blueTeams = teams.filter(t => t.station && t.station.startsWith('Blue'));
+          preview.innerHTML = `
+            <div class="alliance red">
+              <div class="alliance-title">Red Alliance</div>
+              ${redTeams.map(t => `<div class="team-num">${t.teamNumber || '?'}</div>`).join('')}
+            </div>
+            <div class="alliance blue">
+              <div class="alliance-title">Blue Alliance</div>
+              ${blueTeams.map(t => `<div class="team-num">${t.teamNumber || '?'}</div>`).join('')}
+            </div>
+          `;
+        } else {
+          preview.innerHTML = '';
+        }
+      } else {
+        document.getElementById('nextMatchNum').textContent = 'All complete!';
+        document.getElementById('nextMatchField').textContent = '—';
+        document.getElementById('nextMatchTime').textContent = '—';
+        document.getElementById('teamsPreview').innerHTML = '';
+      }
+
+      // Log
+      const logEl = document.getElementById('logEntries');
+      logEl.innerHTML = '';
+      (tracker.log || []).forEach(entry => addLogEntry(entry, false));
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function updateField(fieldNum, matchDesc) {
+      const el = document.getElementById('currentField');
+      const info = document.getElementById('matchInfo');
+
+      if (fieldNum) {
+        el.textContent = `Field ${fieldNum}`;
+        el.className = `current-field field-${fieldNum}`;
+      } else {
+        el.textContent = '—';
+        el.className = 'current-field';
+      }
+
+      if (matchDesc) {
+        info.innerHTML = `Next up: <strong>${matchDesc}</strong>`;
+      }
+    }
+
+    function addLogEntry(entry, autoScroll = true) {
+      const logEl = document.getElementById('logEntries');
+      const div = document.createElement('div');
+      div.className = `log-entry ${entry.type}`;
+
+      const time = new Date(entry.time).toLocaleTimeString();
+      div.innerHTML = `<span class="log-time">${time}</span><span class="log-msg">${entry.message}</span>`;
+      logEl.appendChild(div);
+
+      // Keep only last 100 entries in DOM
+      while (logEl.children.length > 100) {
+        logEl.removeChild(logEl.firstChild);
+      }
+
+      if (autoScroll) logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function switchField(fieldNum) {
+      fetch(`/api/switch/${fieldNum}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(() => fetchState())
+        .catch(err => console.error('Switch failed:', err));
+    }
+
+    init();
+  </script>
+</body>
+</html>
