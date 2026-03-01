@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTC ATEM Auto-Switcher — Setup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            -webkit-app-region: drag;
+        }
+
+        .setup-container {
+            width: 100%;
+            max-width: 560px;
+            padding: 40px 32px;
+            -webkit-app-region: no-drag;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #818cf8, #6366f1, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.15);
+        }
+
+        .section-header .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .section-header .icon.api {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.1));
+        }
+
+        .section-header .icon.event {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+        }
+
+        .section-header .icon.atem {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.1));
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .section-subtitle {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .api-link {
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .api-link:hover {
+            text-decoration: underline;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px 14px;
+            background: #1e2438;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-group input:hover,
+        .form-group select:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .form-group input::placeholder {
+            color: #475569;
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        .form-group select option {
+            background: #1e2438;
+            color: #e2e8f0;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        .btn-start {
+            display: block;
+            width: 100%;
+            padding: 14px 24px;
+            margin-top: 32px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: -0.3px;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-start:active {
+            transform: translateY(0);
+        }
+
+        .btn-start:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-msg {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            color: #f87171;
+            font-size: 13px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .help-text {
+            font-size: 11px;
+            color: #475569;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="setup-container">
+        <div class="logo">
+            <h1>⚡ FTC ATEM Auto-Switcher</h1>
+            <p>Let's get your event set up</p>
+        </div>
+
+        <!-- FTC API Credentials -->
+        <div class="section">
+            <div class="section-header">
+                <div class="icon api">🔑</div>
+                <div>
+                    <div class="section-title">FTC API Credentials</div>
+                    <div class="section-subtitle">
+                        <a class="api-link" href="https://ftc-events.firstinspires.org/services/API"
+                            target="_blank">Register at ftc-events.firstinspires.org →</a>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Username <span class="required">*</span></label>
+                    <input type="text" id="username" placeholder="Your API username" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Auth Key <span class="required">*</span></label>
+                    <input type="password" id="authKey" placeholder="Your auth key" autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Details -->
+        <div class="section">
+            <div class="section-header">
+                <div class="icon event">🏆</div>
+                <div>
+                    <div class="section-title">Event Details</div>
+                    <div class="section-subtitle">Which event are you running?</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Event Code <span class="required">*</span></label>
+                    <input type="text" id="eventCode" placeholder="e.g. USNYNYBRSQ2" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Season</label>
+                    <input type="text" id="season" value="2025" placeholder="2025">
+                </div>
+            </div>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>Tournament Level</label>
+                    <select id="tournamentLevel">
+                        <option value="qual">Qualifications</option>
+                        <option value="playoff">Playoffs</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- ATEM Switcher -->
+        <div class="section">
+            <div class="section-header">
+                <div class="icon atem">🎬</div>
+                <div>
+                    <div class="section-title">ATEM Switcher</div>
+                    <div class="section-subtitle">Your Blackmagic ATEM connection details</div>
+                </div>
+            </div>
+            <div class="form-row full">
+                <div class="form-group">
+                    <label>ATEM IP Address</label>
+                    <input type="text" id="atemIp" value="192.168.10.240" placeholder="192.168.10.240">
+                    <div class="help-text">Find this in your ATEM's network settings</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Field 1 → HDMI Input</label>
+                    <select id="field1Input">
+                        <option value="1" selected>HDMI 1</option>
+                        <option value="2">HDMI 2</option>
+                        <option value="3">HDMI 3</option>
+                        <option value="4">HDMI 4</option>
+                        <option value="5">HDMI 5</option>
+                        <option value="6">HDMI 6</option>
+                        <option value="7">HDMI 7</option>
+                        <option value="8">HDMI 8</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Field 2 → HDMI Input</label>
+                    <select id="field2Input">
+                        <option value="1">HDMI 1</option>
+                        <option value="2">HDMI 2</option>
+                        <option value="3" selected>HDMI 3</option>
+                        <option value="4">HDMI 4</option>
+                        <option value="5">HDMI 5</option>
+                        <option value="6">HDMI 6</option>
+                        <option value="7">HDMI 7</option>
+                        <option value="8">HDMI 8</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-start" id="startBtn" onclick="submitSetup()">Launch Switcher ⚡</button>
+        <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <script>
+        async function submitSetup() {
+            const btn = document.getElementById('startBtn');
+            const error = document.getElementById('errorMsg');
+
+            const username = document.getElementById('username').value.trim();
+            const authKey = document.getElementById('authKey').value.trim();
+            const eventCode = document.getElementById('eventCode').value.trim();
+
+            if (!username || !authKey || !eventCode) {
+                error.textContent = 'Please fill in all required fields (Username, Auth Key, Event Code)';
+                error.style.display = 'block';
+                return;
+            }
+
+            error.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Starting...';
+
+            try {
+                const res = await fetch('/api/setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username,
+                        authKey,
+                        eventCode,
+                        season: document.getElementById('season').value.trim() || '2025',
+                        tournamentLevel: document.getElementById('tournamentLevel').value,
+                        atemIp: document.getElementById('atemIp').value.trim() || '192.168.10.240',
+                        field1Input: document.getElementById('field1Input').value,
+                        field2Input: document.getElementById('field2Input').value,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (data.ok) {
+                    btn.textContent = 'Loading dashboard...';
+                    // The server will redirect to the dashboard
+                    setTimeout(() => {
+                        window.location.href = 'http://localhost:3000';
+                    }, 2000);
+                } else {
+                    error.textContent = data.error || 'Setup failed';
+                    error.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Launch Switcher ⚡';
+                }
+            } catch (err) {
+                error.textContent = 'Connection error: ' + err.message;
+                error.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Launch Switcher ⚡';
+            }
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitSetup();
+        });
+    </script>
+</body>
+
+</html>

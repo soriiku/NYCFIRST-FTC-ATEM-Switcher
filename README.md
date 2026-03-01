@@ -10,7 +10,7 @@ Automatically switch Blackmagic ATEM camera inputs between FTC competition field
 
 ### 1. Download
 
-Download `ftc-atem-switcher.exe` from the [Releases](../../releases) page.
+Download `FTC-ATEM-Switcher.exe` from the [Releases](https://github.com/soriiku/NYCFIRST-FTC-ATEM-Switcher/releases) page.
 
 ### 2. Get FTC API Credentials
 
@@ -20,35 +20,13 @@ You need an FTC Events API account to pull match data:
 2. Register for an account
 3. Save your **username** and **authorization key**
 
-### 3. Run
+### 3. Run the App
 
-Double-click `ftc-atem-switcher.exe`. On first launch, it will ask you a few questions:
+Double-click `FTC-ATEM-Switcher.exe`. Everything is bundled inside — no installation needed.
 
-```
-  ── FTC API Credentials ──
-  FTC API Username: your_username
-  FTC API Auth Key: your_key
+On your first launch, a sleek setup screen will appear directly in the app to ask for your Event Code, API keys, ATEM IP, and camera inputs. Once filled out, the main switcher dashboard loads automatically.
 
-  ── Event Details ──
-  Event Code: USNYNYBRSQ2
-  Season [2025]: 2025
-  Tournament Level (qual/playoff) [qual]: qual
-
-  ── ATEM Switcher ──
-  ATEM IP Address [192.168.10.240]: 192.168.1.240
-  HDMI Input for Field 1 (1-8) [1]: 1
-  HDMI Input for Field 2 (1-8) [3]: 3
-
-  ✓ Configuration saved!
-```
-
-Your answers are saved automatically — you won't be asked again next time.
-
-### 4. Open the Dashboard
-
-Once running, open **http://localhost:3000** in your browser to see the live dashboard.
-
-> **Tip:** To re-do the setup, delete the `.env` file next to the exe and restart.
+> **Tip:** If you ever need to completely reset the configuration to start fresh, just delete the invisible `.env` file that appears next to the `.exe` and restart the app.
 
 ---
 
@@ -129,7 +107,7 @@ If you'd prefer to run from source instead of the exe:
 git clone https://github.com/soriiku/NYCFIRST-FTC-ATEM-Switcher.git
 cd NYCFIRST-FTC-ATEM-Switcher
 npm install
-npm start
+npm run electron:dev
 ```
 
 ### Dry Run Mode (No ATEM)
@@ -140,15 +118,13 @@ Test the full dashboard without connecting to an ATEM:
 npm run dry-run
 ```
 
-Or double-click `START-DRY-RUN.bat` on Windows.
-
 ### Build the Executable
 
 ```bash
-npm run build
+npm run electron:build
 ```
 
-Output: `dist/ftc-atem-switcher.exe`
+Output: `dist/FTC-ATEM-Switcher.exe`
 
 ---
 

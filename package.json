@@ -1,20 +1,41 @@
 {
   "name": "ftc-atem-switcher",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Automatically switch Blackmagic ATEM cameras between FTC competition fields based on match progress",
-  "main": "src/index.js",
-  "bin": "src/index.js",
+  "main": "electron-main.js",
   "scripts": {
     "start": "node src/index.js",
     "dry-run": "node src/index.js --dry-run",
     "test-api": "node src/test-api.js",
-    "build": "pkg . --targets node18-win-x64 --output dist/ftc-atem-switcher.exe"
+    "electron:dev": "electron .",
+    "electron:build": "electron-builder --win",
+    "build:cli": "pkg . --targets node18-win-x64 --output dist/ftc-atem-switcher-cli.exe"
   },
-  "pkg": {
-    "assets": [
-      "src/public/**/*"
+  "build": {
+    "appId": "com.nycfirst.ftc-atem-switcher",
+    "productName": "FTC ATEM Switcher",
+    "directories": {
+      "output": "dist"
+    },
+    "npmRebuild": false,
+    "files": [
+      "electron-main.js",
+      "src/**/*",
+      "node_modules/**/*"
     ],
-    "outputPath": "dist"
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "FTC-ATEM-Switcher.exe"
+    }
   },
   "keywords": [
     "ftc",
@@ -31,6 +52,8 @@
     "express": "^4.21.2"
   },
   "devDependencies": {
+    "electron": "^40.6.1",
+    "electron-builder": "^26.8.1",
     "pkg": "^5.8.1"
   }
 }
