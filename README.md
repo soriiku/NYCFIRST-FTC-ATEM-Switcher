@@ -10,7 +10,7 @@ Automatically switch Blackmagic ATEM camera inputs between FTC competition field
 
 ### 1. Download
 
-Download `FTC-ATEM-Switcher.exe` from the [Releases](https://github.com/soriiku/NYCFIRST-FTC-ATEM-Switcher/releases) page.
+Download `FTC-ATEM-Switcher-Setup.exe` from the [Releases](https://github.com/soriiku/NYCFIRST-FTC-ATEM-Switcher/releases) page.
 
 ### 2. Get FTC API Credentials
 
