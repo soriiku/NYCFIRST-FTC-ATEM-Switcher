@@ -3,7 +3,7 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-const envPath = path.join(__dirname, '.env');
+const envPath = path.join(app.getPath('userData'), '.env');
 let mainWindow = null;
 let serverRunning = false;
 
