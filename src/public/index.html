@@ -1224,8 +1224,8 @@
       logEl.scrollTop = logEl.scrollHeight;
 
       // Render schedule and alliances
-      const nextMatchNum = tracker.nextMatch ? tracker.nextMatch.matchNumber : null;
-      renderSchedule(tracker.hybridSchedule || [], nextMatchNum);
+      const nextMatchId = tracker.nextMatch ? tracker.nextMatch.matchId : null;
+      renderSchedule(tracker.hybridSchedule || [], nextMatchId);
       renderAlliances(tracker.alliances);
     }
 
@@ -1441,19 +1441,19 @@
     // --- Match Schedule ---
     let currentScheduleFilter = 'all';
     let cachedSchedule = [];
-    let cachedNextMatchNum = null;
+    let cachedNextMatchId = null;
 
     function filterSchedule(filter) {
       currentScheduleFilter = filter;
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.toggle('active', btn.textContent.toLowerCase() === filter);
       });
-      renderSchedule(cachedSchedule, cachedNextMatchNum);
+      renderSchedule(cachedSchedule, cachedNextMatchId);
     }
 
-    function renderSchedule(schedule, nextMatchNum) {
+    function renderSchedule(schedule, nextMatchId) {
       cachedSchedule = schedule;
-      cachedNextMatchNum = nextMatchNum;
+      cachedNextMatchId = nextMatchId;
       const container = document.getElementById('scheduleContainer');
 
       if (!schedule || schedule.length === 0) {
@@ -1497,7 +1497,7 @@
         </thead><tbody>`;
 
       for (const m of filtered) {
-        const isNext = nextMatchNum && m.matchNumber === nextMatchNum;
+        const isNext = nextMatchId && m.matchId === nextMatchId;
         const rowClass = m.completed ? 'completed' : (isNext ? 'next-up' : '');
 
         const time = m.startTime

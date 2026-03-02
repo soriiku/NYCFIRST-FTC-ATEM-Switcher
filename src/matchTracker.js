@@ -16,8 +16,8 @@ class MatchTracker extends EventEmitter {
         this.schedule = [];        // Full schedule with field assignments
         this.hybridSchedule = [];  // Schedule + results
         this.alliances = [];       // Alliance selection results
-        this.completedMatches = new Set(); // Match numbers we've already seen as completed
-        this.startedMatches = new Set();   // Match numbers we've already seen as started
+        this.completedMatches = new Set(); // Match IDs we've already seen as completed
+        this.startedMatches = new Set();   // Match IDs we've already seen as started
         this.currentField = null;
         this.nextMatch = null;
         this.lastSwitchTime = null;
@@ -25,7 +25,7 @@ class MatchTracker extends EventEmitter {
         this.initialized = false;
         this.polling = false;
         this.pollTimer = null;
-        this._switchTimers = new Map();  // Match number -> timer for timer mode
+        this._switchTimers = new Map();  // Match ID -> timer for timer mode
     }
 
     /**
@@ -49,11 +49,15 @@ class MatchTracker extends EventEmitter {
 
             // Mark already-started and already-completed matches
             for (const match of this.hybridSchedule) {
-                if (match.actualStartTime) {
-                    this.startedMatches.add(match.matchNumber);
+                const matchId = this._getMatchId(match);
+                const isCompleted = !!match.postResultTime || (match.scoreRedFinal !== null && match.scoreRedFinal !== undefined);
+                const isStarted = !!match.actualStartTime || isCompleted;
+
+                if (isStarted) {
+                    this.startedMatches.add(matchId);
                 }
-                if (match.actualStartTime && match.postResultTime) {
-                    this.completedMatches.add(match.matchNumber);
+                if (isCompleted) {
+                    this.completedMatches.add(matchId);
                 }
             }
             this._log('info', `${this.completedMatches.size} matches completed, mode: ${this.switchMode}`);
@@ -187,8 +191,8 @@ class MatchTracker extends EventEmitter {
 
                 // Add new matches directly into hybrid schedule so frontend sees them immediately
                 for (let i = this.schedule.length; i < freshSchedule.length; i++) {
-                    const matchNum = freshSchedule[i].matchNumber;
-                    if (!this.hybridSchedule.find(m => m.matchNumber === matchNum)) {
+                    const matchId = this._getMatchId(freshSchedule[i]);
+                    if (!this.hybridSchedule.find(m => this._getMatchId(m) === matchId)) {
                         this.hybridSchedule.push(freshSchedule[i]);
                     }
                 }
@@ -226,25 +230,28 @@ class MatchTracker extends EventEmitter {
         let newStarts = [];
 
         for (const match of updatedSchedule) {
-            const matchNum = match.matchNumber;
+            const matchId = this._getMatchId(match);
 
             // Update our local hybrid schedule
-            const idx = this.hybridSchedule.findIndex(m => m.matchNumber === matchNum);
+            const idx = this.hybridSchedule.findIndex(m => this._getMatchId(m) === matchId);
             if (idx >= 0) {
                 this.hybridSchedule[idx] = match;
             } else {
                 this.hybridSchedule.push(match);
             }
 
+            const isCompleted = !!match.postResultTime || (match.scoreRedFinal !== null && match.scoreRedFinal !== undefined);
+            const isStarted = !!match.actualStartTime || isCompleted;
+
             // Check if this match just started
-            if (match.actualStartTime && !this.startedMatches.has(matchNum)) {
-                this.startedMatches.add(matchNum);
+            if (isStarted && !this.startedMatches.has(matchId)) {
+                this.startedMatches.add(matchId);
                 newStarts.push(match);
             }
 
             // Check if this match just completed
-            if (match.actualStartTime && match.postResultTime && !this.completedMatches.has(matchNum)) {
-                this.completedMatches.add(matchNum);
+            if (isCompleted && !this.completedMatches.has(matchId)) {
+                this.completedMatches.add(matchId);
                 newCompletions.push(match);
             }
         }
@@ -259,8 +266,9 @@ class MatchTracker extends EventEmitter {
         // Handle completions
         if (newCompletions.length > 0) {
             for (const match of newCompletions) {
-                const fieldInfo = this._getFieldForMatch(match.matchNumber);
-                this._log('match', `Match ${match.matchNumber} completed on ${fieldInfo || 'unknown field'}`);
+                const matchId = this._getMatchId(match);
+                const fieldInfo = this._getFieldForMatch(matchId);
+                this._log('match', `${matchId} completed on ${fieldInfo || 'unknown field'}`);
                 this.emit('matchCompleted', {
                     matchNumber: match.matchNumber,
                     field: fieldInfo,
@@ -285,12 +293,12 @@ class MatchTracker extends EventEmitter {
      * Schedule a timer-based switch 2:45 after a match starts
      */
     _scheduleTimerSwitch(match) {
-        const matchNum = match.matchNumber;
-        const fieldInfo = this._getFieldForMatch(matchNum);
-        this._log('match', `Match ${matchNum} started on ${fieldInfo || 'unknown field'}`);
+        const matchId = this._getMatchId(match);
+        const fieldInfo = this._getFieldForMatch(matchId);
+        this._log('match', `${matchId} started on ${fieldInfo || 'unknown field'}`);
 
         // Calculate delay: 2:45 (165s) from actualStartTime
-        const startTime = new Date(match.actualStartTime).getTime();
+        const startTime = match.actualStartTime ? new Date(match.actualStartTime).getTime() : Date.now();
         const switchAt = startTime + (165 * 1000); // 2 min 45 sec
         const now = Date.now();
         const delay = Math.max(0, switchAt - now);
@@ -299,17 +307,17 @@ class MatchTracker extends EventEmitter {
         this._log('info', `⏱ Timer set: switching in ${delaySec}s (2:45 after match start)`);
 
         // Cancel any existing timer for this match
-        if (this._switchTimers.has(matchNum)) {
-            clearTimeout(this._switchTimers.get(matchNum));
+        if (this._switchTimers.has(matchId)) {
+            clearTimeout(this._switchTimers.get(matchId));
         }
 
         const timer = setTimeout(() => {
-            this._switchTimers.delete(matchNum);
-            this._log('info', `⏱ Timer fired for match ${matchNum}`);
+            this._switchTimers.delete(matchId);
+            this._log('info', `⏱ Timer fired for match ${matchId}`);
             this._determineNextMatch();
         }, delay);
 
-        this._switchTimers.set(matchNum, timer);
+        this._switchTimers.set(matchId, timer);
     }
 
     /**
@@ -343,42 +351,48 @@ class MatchTracker extends EventEmitter {
      * Update next match info without triggering a switch
      */
     _updateNextMatch() {
-        const allMatchNumbers = this.schedule
-            .map(m => m.matchNumber)
-            .sort((a, b) => a - b);
+        const allMatchIds = this.schedule.map(m => this._getMatchId(m));
 
-        let nextMatchNum = null;
-        for (const num of allMatchNumbers) {
-            if (!this.completedMatches.has(num)) {
-                nextMatchNum = num;
+        let nextMatchId = null;
+        for (const id of allMatchIds) {
+            if (!this.completedMatches.has(id)) {
+                nextMatchId = id;
                 break;
             }
         }
 
-        if (nextMatchNum === null) {
+        if (nextMatchId === null) {
             this.nextMatch = null;
             return;
         }
 
-        const nextField = this._getFieldForMatch(nextMatchNum);
+        const nextField = this._getFieldForMatch(nextMatchId);
         const nextFieldNum = this._parseFieldNumber(nextField);
-        const nextScheduled = this.schedule.find(m => m.matchNumber === nextMatchNum);
+        const nextScheduled = this.schedule.find(m => this._getMatchId(m) === nextMatchId);
 
         this.nextMatch = {
-            matchNumber: nextMatchNum,
+            matchId: nextMatchId,
+            matchNumber: nextScheduled ? nextScheduled.matchNumber : null,
             field: nextField,
             fieldNumber: nextFieldNum,
-            description: nextScheduled ? nextScheduled.description : `Match ${nextMatchNum}`,
+            description: nextScheduled ? nextScheduled.description : nextMatchId,
             startTime: nextScheduled ? nextScheduled.startTime : null,
             teams: nextScheduled ? nextScheduled.teams : [],
         };
     }
 
     /**
-     * Get the field assignment for a match number from the schedule
+     * Get unique ID for a match to handle playoffs correctly
      */
-    _getFieldForMatch(matchNumber) {
-        const scheduled = this.schedule.find(m => m.matchNumber === matchNumber);
+    _getMatchId(match) {
+        return match.description || `Match ${match.matchNumber}`;
+    }
+
+    /**
+     * Get the field assignment for a match ID from the schedule
+     */
+    _getFieldForMatch(matchId) {
+        const scheduled = this.schedule.find(m => this._getMatchId(m) === matchId);
         return scheduled ? scheduled.field : null;
     }
 
@@ -395,20 +409,18 @@ class MatchTracker extends EventEmitter {
      * Determine the next unplayed match and emit field switch if needed
      */
     _determineNextMatch() {
-        // Find the first match that hasn't been completed yet, ordered by match number
-        const allMatchNumbers = this.schedule
-            .map(m => m.matchNumber)
-            .sort((a, b) => a - b);
+        // Find the first match that hasn't been completed yet in chronological order
+        const allMatchIds = this.schedule.map(m => this._getMatchId(m));
 
-        let nextMatchNum = null;
-        for (const num of allMatchNumbers) {
-            if (!this.completedMatches.has(num)) {
-                nextMatchNum = num;
+        let nextMatchId = null;
+        for (const id of allMatchIds) {
+            if (!this.completedMatches.has(id)) {
+                nextMatchId = id;
                 break;
             }
         }
 
-        if (nextMatchNum === null) {
+        if (nextMatchId === null) {
             this._log('info', 'All matches completed!');
             this.nextMatch = null;
             this.emit('allComplete');
@@ -420,15 +432,16 @@ class MatchTracker extends EventEmitter {
             return;
         }
 
-        const nextField = this._getFieldForMatch(nextMatchNum);
+        const nextField = this._getFieldForMatch(nextMatchId);
         const nextFieldNum = this._parseFieldNumber(nextField);
-        const nextScheduled = this.schedule.find(m => m.matchNumber === nextMatchNum);
+        const nextScheduled = this.schedule.find(m => this._getMatchId(m) === nextMatchId);
 
         this.nextMatch = {
-            matchNumber: nextMatchNum,
+            matchId: nextMatchId,
+            matchNumber: nextScheduled ? nextScheduled.matchNumber : null,
             field: nextField,
             fieldNumber: nextFieldNum,
-            description: nextScheduled ? nextScheduled.description : `Match ${nextMatchNum}`,
+            description: nextScheduled ? nextScheduled.description : nextMatchId,
             startTime: nextScheduled ? nextScheduled.startTime : null,
             teams: nextScheduled ? nextScheduled.teams : [],
         };
@@ -442,7 +455,8 @@ class MatchTracker extends EventEmitter {
             this._log('switch', `→ Switching to Field ${nextFieldNum}`);
             this.emit('fieldSwitch', {
                 fieldNumber: nextFieldNum,
-                matchNumber: nextMatchNum,
+                matchNumber: this.nextMatch.matchNumber,
+                matchId: this.nextMatch.matchId,
                 description: this.nextMatch.description,
             });
         }
@@ -493,9 +507,11 @@ class MatchTracker extends EventEmitter {
     getState() {
         // Build schedule with completion status for dashboard
         const scheduleWithStatus = this.schedule.map(m => {
-            const hybrid = this.hybridSchedule.find(h => h.matchNumber === m.matchNumber);
-            const completed = this.completedMatches.has(m.matchNumber);
+            const matchId = this._getMatchId(m);
+            const hybrid = this.hybridSchedule.find(h => this._getMatchId(h) === matchId);
+            const completed = this.completedMatches.has(matchId);
             return {
+                matchId: matchId,
                 matchNumber: m.matchNumber,
                 description: m.description || `Match ${m.matchNumber}`,
                 field: m.field || null,
@@ -505,7 +521,7 @@ class MatchTracker extends EventEmitter {
                 scoreRedFinal: hybrid ? hybrid.scoreRedFinal : null,
                 scoreBlueFinal: hybrid ? hybrid.scoreBlueFinal : null,
             };
-        }).sort((a, b) => a.matchNumber - b.matchNumber);
+        }); // Chronological order naturally preserved
 
         return {
             initialized: this.initialized,
